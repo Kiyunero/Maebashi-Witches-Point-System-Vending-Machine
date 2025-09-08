@@ -1,5 +1,6 @@
 // グローバルスコープの変数宣言
 let adScreen, mainContent, adVideo;
+let fixedUrlButton; // <-- ① この行を追加
 
 // 広告画面に遷移するグローバル関数
 function goToAdScreen() {
@@ -7,6 +8,7 @@ function goToAdScreen() {
         window.vueApp.detachUserListener();
     }
     if (mainContent && adScreen && adVideo) {
+        fixedUrlButton.style.display = 'none'; // <-- ② この行を追加
         mainContent.classList.add('hidden');
         adScreen.style.display = 'block';
         if (adVideo.paused) {
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     adScreen = document.getElementById('ad-screen');
     mainContent = document.getElementById('main-content');
     adVideo = document.getElementById('ad-video');
+    fixedUrlButton = document.getElementById('fixed-url-button'); // <-- ③ この行を追加
 
     if (!adScreen || !mainContent || !adVideo) {
         console.error("必要なHTML要素が見つかりません。");
@@ -60,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('wheel', resetInactivityTimer, { passive: true, capture: true });
 
     adScreen.addEventListener('click', () => {
+        fixedUrlButton.style.display = 'block'; // <-- ④ この行を追加
         adScreen.style.display = 'none';
         mainContent.classList.remove('hidden');
         resetInactivityTimer();
