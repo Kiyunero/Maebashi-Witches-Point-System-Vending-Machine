@@ -755,28 +755,3 @@ body {
     transform: translateY(-5px) scale(1.03);
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
-/* style.css の一番下に追加してください */
-
-#fixed-url-button {
-    display: none;   /* <-- この行を追加して、デフォルトで非表示にします */
-    position: fixed; /* 画面上の特定の位置に固定します */
-    top: 20px;    /* 画面の下から15pxの位置に配置します */
-    /* right: 15px;     <-- この行を削除 */
-    left: 50%;       /* 画面の左端から50%の位置に配置します */
-    transform: translateX(-50%); /* 要素自身の幅の半分だけ左にずらして中央揃えにします */
-    z-index: 9999;   /* 他のどの要素よりも手前に表示されるようにします */
-    
-    background-color: rgba(0, 0, 0, 0.6); /* 背景色を少し透明な黒にします */
-    color: white;                         /* 文字色を白にします */
-    padding: 8px 12px;                    /* ボタンの内側の余白を設定します */
-    border-radius: 8px;                   /* ボタンの角を丸くします */
-    text-decoration: none;                /* テキストの下線を消します */
-    font-size: 14px;                      /* 文字を少し小さめにします */
-    
-    opacity: 0.7; /* ボタンを少し透明にして、目立たないようにします */
-    transition: opacity 0.3s ease; /* マウスを乗せた時のアニメーションを滑らかにします */
-}
-
-#fixed-url-button:hover {
-    opacity: 1; /* マウスを乗せると、はっきりと表示されるようになります */
-}
