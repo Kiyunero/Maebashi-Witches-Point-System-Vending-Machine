@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const adVideos = ['https://firebasestorage.googleapis.com/v0/b/pilgrimage-quest-app.firebasestorage.app/o/ad_01.mp4?alt=media&token=151f3a81-c21d-4b3d-b4af-42796216473c'];
+    const adVideos = ['https://firebasestorage.googleapis.com/v0/b/pilgrimage-quest-app.firebasestorage.app/o/%E3%82%81%E3%81%B6%E3%81%8F%E7%B8%A6%E7%94%BB%E9%9D%A2.mp4?alt=media&token=7f43cfc8-1fb1-4960-953d-e545496eff8b'];
     let currentVideoIndex = 0;
 
     adVideo.addEventListener('ended', () => {
