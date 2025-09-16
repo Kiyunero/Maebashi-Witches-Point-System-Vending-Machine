@@ -15,7 +15,7 @@
     <a href="https://kiyunero.github.io/Portal-App/" id="fixed-url-button"></a>
 
     <div id="ad-screen">
-        <video id="ad-video" src="https://firebasestorage.googleapis.com/v0/b/pilgrimage-quest-app.firebasestorage.app/o/%E3%82%81%E3%81%B6%E3%81%8F%E7%B8%A6%E7%94%BB%E9%9D%A2.mp4?alt=media&token=92193b11-d879-4240-90cb-9f7549dea84e" autoplay playsinline></video>
+        <video id="ad-video" src="https://firebasestorage.googleapis.com/v0/b/pilgrimage-quest-app.firebasestorage.app/o/%E3%82%B5%E3%83%B3%E3%83%87%E3%83%B3RS%2F%E3%82%B5%E3%83%B3%E3%83%87%E3%83%B3%E7%B8%A6%E5%8B%95%E7%94%BB.mp4?alt=media&token=4d80a5ec-c14f-4219-ad24-3d13cabe9eab" autoplay playsinline></video>
         <div class="touch-prompt">画面をタッチしてください</div>
     </div>
 
@@ -60,11 +60,11 @@
                             </button>
                              <div v-if="currentUser" class="alert alert-success mt-2 text-center">
                                 連携中: <span class="auth-modal-user-info">{{ currentUser.userId.substring(0, 8) }}...</span><br>
-                                保有マポ: <span class="auth-modal-user-info">{{ currentUser.points || 0 }} P</span>
+                                保有サンポ: <span class="auth-modal-user-info">{{ currentUser.points || 0 }} P</span>
                             </div>
                             
                             <button class="btn btn-warning" @click="showRewardPage">
-                                🎁 マポで景品交換
+                                🎁 サンポで景品交換
                             </button>
                         </div>
                     </div>
@@ -149,7 +149,7 @@
                     <div class="event-detail-header">
                         <h2 class="event-detail-spot-title">景品交換</h2>
                         <div class="header-points-display">
-                            保有マポ: {{ currentUser?.points || 0 }} P
+                            保有サンポ: {{ currentUser?.points || 0 }} P
                         </div>
                         <button @click="hideRewardPage" class="back-to-map-btn">戻る</button>
                     </div>
