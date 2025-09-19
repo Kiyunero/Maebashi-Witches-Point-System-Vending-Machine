@@ -139,8 +139,8 @@ function initMap() {
         },
         mounted() {
             this.map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 36.39168771404707, lng: 139.06995217545418 },
-                zoom: 17,
+                center: { lat: 36.46607481894969, lng: 139.205036986019 },
+                zoom: 19,
                 gestureHandling: 'greedy',
             });
 
@@ -263,7 +263,6 @@ function initMap() {
                                     ${goodsHtml}
                                     ${lodgingButtonHtml}
                                     ${questButtonHtml} 
-                                    <button class="event-btn" data-spot-name="${spot.name}">周辺のイベント情報はこちら</button>
                                 </div>
                             </div>
                         `,
@@ -285,7 +284,7 @@ function initMap() {
                 if (target) {
                     this.openInfoWindow(target.infoWindow, target.gmapMarker);
                     const destination = target.gmapMarker.getPosition();
-                    this.flyTo(destination, 17.5);
+                    this.flyTo(destination, 19);
                 }
             },
             openInfoWindow(infoWindow, marker) {
