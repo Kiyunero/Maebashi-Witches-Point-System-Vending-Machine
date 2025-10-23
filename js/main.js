@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const adVideos = ['https://firebasestorage.googleapis.com/v0/b/pilgrimage-quest-app.firebasestorage.app/o/%E3%82%B5%E3%83%B3%E3%83%87%E3%83%B3RS%2F%E3%82%B5%E3%83%B3%E3%83%87%E3%83%B3%E7%B8%A6%E5%8B%95%E7%94%BB.mp4?alt=media&token=4d80a5ec-c14f-4219-ad24-3d13cabe9eab'];
+    const adVideos = ['https://firebasestorage.googleapis.com/v0/b/pilgrimage-quest-app.firebasestorage.app/o/%E3%82%A6%E3%82%A3%E3%83%83%E3%83%81%E3%83%BC%E3%82%BA%E7%B8%A6%E5%8B%95%E7%94%BB.mp4?alt=media&token=a46dc108-bc30-4345-8bde-199f2214e5ad'];
     let currentVideoIndex = 0;
 
     adVideo.addEventListener('ended', () => {
@@ -139,8 +139,8 @@ function initMap() {
         },
         mounted() {
             this.map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 36.46607481894969, lng: 139.205036986019 },
-                zoom: 19,
+                center: { lat: 36.39179914752697, lng: 139.06979534693716 },
+                zoom: 17,
                 gestureHandling: 'greedy',
             });
 
@@ -154,14 +154,14 @@ function initMap() {
             });
             
             document.body.addEventListener('click', (event) => {
-                if (event.target.matches('.event-btn')) {
-                    const spotName = event.target.dataset.spotName;
-                    const spotData = this.spots.find(s => s.name === spotName);
-                    if (spotData) this.showEventDetail(spotData);
+                if (event.target.matches('.event-btn')) { //
+                    const spotName = event.target.dataset.spotName; //
+                    const spotData = this.spots.find(s => s.name === spotName); //
+                    if (spotData) this.showEventDetail(spotData); //
                 }
-                if (event.target.matches('.start-quest-btn')) {
-                    const questId = event.target.dataset.questId;
-                    if (questId) this.showQuestDetail(questId);
+                if (event.target.matches('.start-quest-btn')) { //
+                    const questId = event.target.dataset.questId; //
+                    if (questId) this.showQuestDetail(questId); //
                 }
             });
 
@@ -202,7 +202,7 @@ function initMap() {
                     alert('データの取得中にエラーが発生しました。');
                 }
             },
-            placeMarkers() {
+            placeMarkers() { //
                 this.markers.forEach(markerInfo => markerInfo.gmapMarker.setMap(null));
                 this.markers = [];
 
@@ -250,10 +250,18 @@ function initMap() {
                     }
                     let questButtonHtml = '';
                     if (spot.questId) {
-                        questButtonHtml = `<button class="info-window-btn start-quest-btn" data-quest-id="${spot.questId}">クエストを受注する</button>`;
+                        questButtonHtml = `<button class="info-window-btn start-quest-btn" data-quest-id="${spot.questId}">クエストを受注する</button>`; //
                     }
                     
-                    const infoWindow = new google.maps.InfoWindow({
+                    // ▼▼▼ 以下を新規追加 ▼▼▼
+                    let eventButtonHtml = '';
+                    // spotに event1_name (イベントの1つ目) が設定されていればボタンを表示
+                    if (spot.event1_name) {
+                        eventButtonHtml = `<button class="info-window-btn event-btn" data-spot-name="${spot.name}">イベント詳細を見る</button>`; //
+                    }
+                    // ▲▲▲ ここまで新規追加 ▲▲▲
+                    
+                    const infoWindow = new google.maps.InfoWindow({ //
                         content: `
                             <div class="info-window">
                                 <h6 class="info-window-header">${spot.name}</h6>
@@ -263,7 +271,7 @@ function initMap() {
                                     ${goodsHtml}
                                     ${lodgingButtonHtml}
                                     ${questButtonHtml} 
-                                </div>
+                                    ${eventButtonHtml} </div>
                             </div>
                         `,
                         disableAutoPan: true
@@ -284,7 +292,7 @@ function initMap() {
                 if (target) {
                     this.openInfoWindow(target.infoWindow, target.gmapMarker);
                     const destination = target.gmapMarker.getPosition();
-                    this.flyTo(destination, 19);
+                    this.flyTo(destination, 16);
                 }
             },
             openInfoWindow(infoWindow, marker) {
@@ -380,7 +388,7 @@ function initMap() {
                     }
                 }, interval);
             },
-            showEventDetail(spotData) {
+            showEventDetail(spotData) { //
                 const events = [];
                 for (let i = 1; i <= 3; i++) {
                     if (spotData[`event${i}_name`]) {
@@ -412,7 +420,7 @@ function initMap() {
             hideQrCode() {
                 this.isQrModalVisible = false;
             },
-            async showQuestDetail(questId) {
+            async showQuestDetail(questId) { //
                 try {
                     const questRef = db.collection('quests').doc(questId);
                     const questDoc = await questRef.get();
@@ -534,6 +542,19 @@ function initMap() {
                     console.log("データベースの監視を停止しました。");
                 }
             },
+            // ▼▼▼ このメソッドを新規追加 ▼▼▼
+            isFirebaseMp4(url) { //
+                if (!url) return false;
+                try {
+                    // URLをパースして '?' より前のパス部分を取得
+                    const path = new URL(url).pathname;
+                    return path.toLowerCase().endsWith('.mp4');
+                } catch (e) {
+                    // 不正なURLの場合は、単純な文字列としてチェック
+                    return url.split('?')[0].toLowerCase().endsWith('.mp4');
+                }
+            },
+            // ▲▲▲ ここまで新規追加 ▲▲▲
             // ▼▼▼ ここから下のメソッドを全て新規・修正 ▼▼▼
             showRewardPage() {
                 this.isRewardPageVisible = true;

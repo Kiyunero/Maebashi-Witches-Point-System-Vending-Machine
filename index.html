@@ -15,7 +15,7 @@
     <a href="https://kiyunero.github.io/Portal-App/" id="fixed-url-button"></a>
 
     <div id="ad-screen">
-        <video id="ad-video" src="https://firebasestorage.googleapis.com/v0/b/pilgrimage-quest-app.firebasestorage.app/o/%E3%82%B5%E3%83%B3%E3%83%87%E3%83%B3RS%2F%E3%82%B5%E3%83%B3%E3%83%87%E3%83%B3%E7%B8%A6%E5%8B%95%E7%94%BB.mp4?alt=media&token=4d80a5ec-c14f-4219-ad24-3d13cabe9eab" autoplay playsinline></video>
+        <video id="ad-video" src="https://firebasestorage.googleapis.com/v0/b/pilgrimage-quest-app.firebasestorage.app/o/%E3%82%A6%E3%82%A3%E3%83%83%E3%83%81%E3%83%BC%E3%82%BA%E7%B8%A6%E5%8B%95%E7%94%BB.mp4?alt=media&token=a46dc108-bc30-4345-8bde-199f2214e5ad" autoplay playsinline></video>
         <div class="touch-prompt">画面をタッチしてください</div>
     </div>
 
@@ -60,11 +60,11 @@
                             </button>
                              <div v-if="currentUser" class="alert alert-success mt-2 text-center">
                                 連携中: <span class="auth-modal-user-info">{{ currentUser.userId.substring(0, 8) }}...</span><br>
-                                保有サンポ: <span class="auth-modal-user-info">{{ currentUser.points || 0 }} P</span>
+                                保有マポ: <span class="auth-modal-user-info">{{ currentUser.points || 0 }} P</span>
                             </div>
                             
                             <button class="btn btn-warning" @click="showRewardPage">
-                                🎁 サンポで景品交換
+                                🎁 マポで景品交換
                             </button>
                         </div>
                     </div>
@@ -93,18 +93,18 @@
                                 <div class="event-text-content">
                                     <h3>{{ event.name }}</h3>
                                     <template v-if="event.image">
-                                        <video v-if="event.image.endsWith('.mp4')"
+                                        <video v-if="isFirebaseMp4(event.image)"
                                                :ref="'eventVideo_' + index"
                                                :data-ref-name="'eventVideo_' + index"
                                                :src="event.image"
                                                class="event-video"
-                                               autoplay loop playsinline>
+                                               autoplay loop playsinline muted>
                                         </video>
                                         <img v-else
                                              :src="event.image"
                                              alt=""
                                              class="event-image">
-                                    </template>
+                                        </template>
                                     <p><strong>開催日時:</strong> {{ event.datetime }}</p>
                                     <p><strong>場所:</strong> {{ event.location }}</p>
                                     <p><strong>詳細:</strong> {{ event.description }}</p>
@@ -131,7 +131,18 @@
                     <div v-if="currentQuestForDetail" class="event-detail-content">
                         <div class="event-item">
                             <h3>{{ currentQuestForDetail.title }}</h3>
-                            <img :src="currentQuestForDetail.image" alt="" class="event-image">
+                            
+                            <template v-if="currentQuestForDetail.image">
+                                <video v-if="isFirebaseMp4(currentQuestForDetail.image)"
+                                       :src="currentQuestForDetail.image"
+                                       class="event-video"
+                                       autoplay loop playsinline muted>
+                                </video>
+                                <img v-else
+                                     :src="currentQuestForDetail.image"
+                                     alt=""
+                                     class="event-image">
+                            </template>
                             <p><strong>＜クエスト説明＞</strong><br>{{ currentQuestForDetail.description }}</p>
                             <p><strong>＜クリア条件＞</strong><br>{{ currentQuestForDetail.clearCondition }}</p>
 
