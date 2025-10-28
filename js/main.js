@@ -397,7 +397,7 @@ function initMap() {
                             datetime: spotData[`event${i}_datetime`],
                             location: spotData[`event${i}_location`],
                             description: spotData[`event${i}_description`],
-                            prize: spotData[`event${i}_prize`],
+                            access: spotData[`event${i}_access`],
                             qrcode: spotData[`event${i}_qrcode`],
                             image: spotData[`event${i}_image`]
                         });

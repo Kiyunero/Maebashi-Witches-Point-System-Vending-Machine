@@ -107,8 +107,8 @@
                                         </template>
                                     <p><strong>開催日時:</strong> {{ event.datetime }}</p>
                                     <p><strong>場所:</strong> {{ event.location }}</p>
+                                    <p><strong>アクセス:</strong> {{ event.access }}</p>
                                     <p><strong>詳細:</strong> {{ event.description }}</p>
-                                    <p><strong>景品:</strong> {{ event.prize }}</p>
                                 </div>
                                 <button v-if="event.qrcode" @click="showQrCode(event.qrcode, 'アプリで読み込んでイベントに参加しよう！')" class="join-event-btn">
                                     参加する
@@ -160,7 +160,7 @@
                     <div class="event-detail-header">
                         <h2 class="event-detail-spot-title">景品交換</h2>
                         <div class="header-points-display">
-                            保有サンポ: {{ currentUser?.points || 0 }} P
+                            保有マポ: {{ currentUser?.points || 0 }} P
                         </div>
                         <button @click="hideRewardPage" class="back-to-map-btn">戻る</button>
                     </div>
