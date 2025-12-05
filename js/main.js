@@ -1,25 +1,33 @@
+// js/main.js
+
 // グローバルスコープの変数宣言
 let adScreen, mainContent, adVideo;
-let fixedUrlButton; // <-- ① この行を追加
+let fixedUrlButton; 
+
+// デモユーザーID (展示会用の共通アカウントID)
+const DEMO_USER_ID = "DEMO_USER_001"; 
 
 // 広告画面に遷移するグローバル関数
 function goToAdScreen() {
     if (window.vueApp && window.vueApp.currentUser) {
-        window.vueApp.detachUserListener();
+        if (!window.vueApp.isDemoMode) {
+            window.vueApp.detachUserListener();
+        }
     }
     if (mainContent && adScreen && adVideo) {
-        fixedUrlButton.style.display = 'none'; // <-- ② この行を追加
+        fixedUrlButton.style.display = 'none'; 
         mainContent.classList.add('hidden');
         adScreen.style.display = 'block';
         if (adVideo.paused) {
             adVideo.play().catch(e => console.error("Video play failed:", e));
         }
         adVideo.volume = 1.0;
-        if (window.vueApp && window.vueApp.activeInfoWindow) {
-            window.vueApp.activeInfoWindow.close();
+        
+        if (window.vueApp && window.vueApp.activePopup) {
+            window.vueApp.activePopup.close();
+            window.vueApp.activePopup = null;
         }
-        // ▼▼▼ 追加 ▼▼▼
-        // 他のページが表示されていたら非表示にする
+        
         if (window.vueApp) {
             window.vueApp.isEventDetailVisible = false;
             window.vueApp.isQuestDetailVisible = false;
@@ -33,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     adScreen = document.getElementById('ad-screen');
     mainContent = document.getElementById('main-content');
     adVideo = document.getElementById('ad-video');
-    fixedUrlButton = document.getElementById('fixed-url-button'); // <-- ③ この行を追加
+    fixedUrlButton = document.getElementById('fixed-url-button'); 
 
     if (!adScreen || !mainContent || !adVideo) {
         console.error("必要なHTML要素が見つかりません。");
@@ -63,10 +71,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('wheel', resetInactivityTimer, { passive: true, capture: true });
 
     adScreen.addEventListener('click', () => {
-        fixedUrlButton.style.display = 'block'; // <-- ④ この行を追加
+        fixedUrlButton.style.display = 'block'; 
         adScreen.style.display = 'none';
         mainContent.classList.remove('hidden');
         resetInactivityTimer();
+
+        setTimeout(() => {
+            if (window.vueApp && window.vueApp.map) {
+                window.vueApp.map.invalidateSize();
+                console.log("Map size invalidated.");
+            }
+        }, 100); 
 
         let volume = 1.0;
         const fadeOut = setInterval(() => {
@@ -79,10 +94,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 50);
     });
+
+    initMap();
 });
 
 
-// 【重要】Firebaseプロジェクト作成時にコピーした設定情報をここに貼り付けます
+// Firebase (本番モード) の設定
 const firebaseConfig = {
     apiKey: "AIzaSyAxZffh198by405B4t64hTMyEFatYiX92A",
     authDomain: "point-tuika.firebaseapp.com",
@@ -92,12 +109,29 @@ const firebaseConfig = {
     appId: "1:763384904606:web:8d7556d0089b5f9f08b48f"
   };
 
-// Firebaseアプリの初期化
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+let db; 
+try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore(); 
+    // オフライン永続化の有効化
+    db.enablePersistence().catch(err => {
+        console.warn("Firebase offline persistence failed:", err.code);
+    });
+    console.log("Firebase (本番モード) の初期化に成功しました。");
+} catch (e) {
+    console.error("Firebase の初期化に失敗しました:", e);
+}
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'images/marker-icon-2x.png',
+  iconUrl: 'images/marker-icon.png',
+  shadowUrl: 'images/marker-shadow.png',
+  imagePath: 'images/'
+});
 
 
-// Google Maps APIのコールバック関数
+// Vueアプリの初期化
 function initMap() {
     const app = Vue.createApp({
         data() {
@@ -106,10 +140,10 @@ function initMap() {
                 header: null,
                 spots: [],
                 allQuests: [],
-                markers: [],
-                activeInfoWindow: null,
+                markers: [], 
+                activePopup: null,
                 isAnimating: false,
-                animationFrameId: null,
+                animationFrameId: null, 
                 isHeaderExpanded: false,
                 isEventDetailVisible: false,
                 currentSpotForEvents: null,
@@ -130,48 +164,134 @@ function initMap() {
                 currentUser: null,
                 isQuestDetailVisible: false,
                 currentQuestForDetail: null,
-                userListener: null,
-                // ▼▼▼ 新規追加 ▼▼▼
-                isRewardPageVisible: false, // 景品交換ページの表示状態
-                rewards: [], // 景品リスト
-                isRedeeming: false, // 交換処理中の状態
+                userListener: null, 
+                isRewardPageVisible: false, 
+                rewards: [], 
+                isRedeeming: false, 
+                isDemoMode: false, 
             };
         },
+        computed: {
+        },
         mounted() {
-            this.map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 36.39179914752697, lng: 139.06979534693716 },
-                zoom: 17,
-                gestureHandling: 'greedy',
-            });
+            try {
+                console.log("ステップ3: mounted() が呼び出されました。");
+                
+                this.map = L.map('map').setView([36.391799, 139.069795], 17);
 
-            this.map.addListener('click', () => {
-                if (this.activeInfoWindow) {
-                    this.activeInfoWindow.close();
-                    this.activeInfoWindow = null;
-                }
-                this.hideEventDetail();
-                this.hideQuestDetail();
-            });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19, 
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>' 
+                }).addTo(this.map); 
+
+                console.log("Leaflet地図の初期化に成功しました。");
+
+                this.map.on('click', () => {
+                    if (this.activePopup) { 
+                        this.activePopup.close();
+                        this.activePopup = null;
+                    }
+                    this.hideEventDetail();
+                    this.hideQuestDetail();
+                });
             
-            document.body.addEventListener('click', (event) => {
-                if (event.target.matches('.event-btn')) { //
-                    const spotName = event.target.dataset.spotName; //
-                    const spotData = this.spots.find(s => s.name === spotName); //
-                    if (spotData) this.showEventDetail(spotData); //
-                }
-                if (event.target.matches('.start-quest-btn')) { //
-                    const questId = event.target.dataset.questId; //
-                    if (questId) this.showQuestDetail(questId); //
-                }
-            });
+                // Popup内のボタンイベントリスナー
+                document.body.addEventListener('click', (event) => {
+                    if (event.target.matches('.event-btn')) { 
+                        const spotName = event.target.dataset.spotName; 
+                        const spotData = this.spots.find(s => s.name === spotName); 
+                        if (spotData) this.showEventDetail(spotData); 
+                    }
+                    if (event.target.matches('.start-quest-btn')) { 
+                        const questId = event.target.dataset.questId; 
+                        if (questId) this.showQuestDetail(questId); 
+                    }
+                    if (event.target.matches('.purchase')) {
+                        const spotId = event.target.dataset.spotId; 
+                        if (spotId) this.showPurchaseModal(spotId);
+                    }
+                    if (event.target.matches('.lodging')) {
+                        const spotId = event.target.dataset.spotId;
+                        if (spotId) this.showLodgingModal(spotId);
+                    }
+                });
 
-            this.fetchDataFromFirestore();
+                if (db) {
+                    console.log("本番環境を検出しました。データを自動で読み込みます。");
+                    this.fetchData('production');
+                } else {
+                    console.warn("本番環境に接続できません。モード選択モーダルを表示します。");
+                    this.showAuthModal();
+                }
+
+            } catch (error) {
+                console.error("Leaflet地図の初期化中にエラー:", error);
+                const mapEl = document.getElementById('map');
+                if (mapEl) {
+                    mapEl.innerHTML = `<h2 style="color: red; text-align: center; padding-top: 20%;">エラー: 地図の初期化に失敗しました。</h2>`;
+                    mapEl.style.backgroundColor = '#333';
+                }
+            }
         },
         methods: {
             handleBackToAdClick() {
                 goToAdScreen();
             },
-            async fetchDataFromFirestore() {
+            
+            async fetchData(mode) {
+                // モードによってデータの取得先を分岐
+                if (mode === 'demo') {
+                    this.isDemoMode = true;
+                    // デモモード: ローカルJSONから取得
+                    await this.fetchLocalData();
+                } else {
+                    this.isDemoMode = false;
+                    // 本番モード: Firebaseから取得
+                    if (!db) {
+                        if (this.currentUser) { 
+                            this.authErrorMessage = "本番データベースに接続できません。電波状況を確認するか、デモモードをお試しください。";
+                            this.isTokenLoading = false;
+                            return;
+                        }
+                        console.warn("DB未接続のため、本番データのフェッチをスキップします。");
+                        return;
+                    }
+                    await this.fetchFirebaseData();
+                }
+            },
+
+            async fetchLocalData() {
+                console.log("JSONデータ (デモモード) の読み込みを開始します...");
+                try {
+                    const headerResponse = await fetch('data/header.json');
+                    if (!headerResponse.ok) throw new Error('header.jsonの読み込みに失敗');
+                    this.header = await headerResponse.json();
+                    
+                    const spotsResponse = await fetch('data/spots.json');
+                    if (!spotsResponse.ok) throw new Error('spots.jsonの読み込みに失敗');
+                    this.spots = await spotsResponse.json();
+
+                    const questsResponse = await fetch('data/quests.json');
+                    if (!questsResponse.ok) throw new Error('quests.jsonの読み込みに失敗');
+                    this.allQuests = await questsResponse.json();
+                    
+                    const rewardsResponse = await fetch('data/rewards.json');
+                    if (!rewardsResponse.ok) throw new Error('rewards.jsonの読み込みに失敗');
+                    this.rewards = await rewardsResponse.json();
+                    this.rewards.sort((a, b) => a.requiredPoints - b.requiredPoints);
+                    
+                    console.log("デモデータの読み込み完了");
+                    this.placeMarkers();
+
+                } catch (error) {
+                    console.error("JSONデータの取得エラー: ", error);
+                    alert('データ読み込みに失敗しました。dataフォルダとJSONファイルを確認してください。');
+                }
+            },
+
+            // 本番モード用データ取得メソッド（復活）
+            async fetchFirebaseData() {
+                console.log("Firebase (本番モード) のデータ読み込みを開始します...");
                 try {
                     const headerDoc = await db.collection('config').doc('header').get();
                     if (headerDoc.exists) {
@@ -180,9 +300,7 @@ function initMap() {
 
                     const spotsSnapshot = await db.collection('spots').get();
                     const questsSnapshot = await db.collection('quests').get();
-                    // ▼▼▼ 新規追加 ▼▼▼
                     const rewardsSnapshot = await db.collection('prizes').orderBy('requiredPoints', 'asc').get();
-
 
                     this.allQuests = questsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     
@@ -190,183 +308,218 @@ function initMap() {
                     spotsSnapshot.forEach((doc) => {
                         spotsList.push({ id: doc.id, ...doc.data() });
                     });
-                    
                     this.spots = spotsList;
-                    this.placeMarkers();
-
-                    // ▼▼▼ 新規追加 ▼▼▼
+                    
                     this.rewards = rewardsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    console.log("Firebaseデータの読み込み完了");
+                    this.placeMarkers();
 
                 } catch (error) {
                     console.error("Firestoreからのデータ取得エラー: ", error);
-                    alert('データの取得中にエラーが発生しました。');
+                    alert('本番データの取得中にエラーが発生しました。電波状況を確認してください。');
                 }
             },
-            placeMarkers() { //
-                this.markers.forEach(markerInfo => markerInfo.gmapMarker.setMap(null));
+            
+            placeMarkers() { 
+                console.log("Leaflet.js版 placeMarkers を実行します。");
+
+                if (this.markers && this.markers.length > 0) {
+                    this.markers.forEach(marker => {
+                        marker.remove();
+                    });
+                }
                 this.markers = [];
+                
+                if (!this.spots || this.spots.length === 0) {
+                    return;
+                }
 
                 this.spots.forEach(spot => {
-                    const position = {
-                        lat: parseFloat(spot.latitude),
-                        lng: parseFloat(spot.longitude)
-                    };
+                    if (!spot.latitude || !spot.longitude) {
+                        return;
+                    }
+                    const lat = parseFloat(spot.latitude);
+                    const lng = parseFloat(spot.longitude);
+
+                    if (isNaN(lat) || isNaN(lng)) {
+                        return;
+                    }
                     
-                    const questStatus = this.currentUser ? this.currentUser.questProgress[spot.questId] : undefined;
+                    const position = [lat, lng];
                     
-                    let pinColor = "#EA4335"; // デフォルト（未着手）は赤
-                    if (questStatus === 'in_progress') pinColor = "#FBBC04"; // 進行中は黄色
-                    if (questStatus === 'completed') pinColor = "#34A853"; // 完了は緑
-                    
-                    const marker = new google.maps.Marker({
-                        position: position,
-                        map: this.map,
-                        title: spot.name,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            scale: 12,
-                            fillColor: pinColor,
-                            fillOpacity: 1,
-                            strokeWeight: 1,
-                            strokeColor: '#fff'
-                        }
+                    const marker = L.marker(position, {
+                        title: spot.name
                     });
+
+                    let spotImageHtml = '';
+                    const imageUrl = spot.detail_image || spot.image; 
                     
-                    const spotImageHtml = spot.detail_image ? `<img src="${spot.detail_image}" alt="${spot.name}" class="info-window-spot-image">` : '';
+                    if (imageUrl) {
+                        if (this.isVideoFile(imageUrl)) {
+                            spotImageHtml = `
+                                <video src="${imageUrl}" class="info-window-spot-image" 
+                                       autoplay loop muted playsinline controls>
+                                </video>
+                            `;
+                        } else {
+                            spotImageHtml = `
+                                <img src="${imageUrl}" alt="${spot.name}" 
+                                     class="info-window-spot-image">
+                            `;
+                        }
+                    }
+
                     let spotDetailsHtml = '<div class="info-window-spot-details">';
-                    if (spot.comment) spotDetailsHtml += `<p>${spot.comment}</p>`;
-                    if (spot.address) spotDetailsHtml += `<p><strong>住所:</strong> ${spot.address}</p>`;
-                    if (spot.phone) spotDetailsHtml += `<p><strong>電話:</strong> ${spot.phone}</p>`;
-                    if (spot.hours) spotDetailsHtml += `<p><strong>時間:</strong> ${spot.hours}</p>`;
+                    if (spot.comment) {
+                        spotDetailsHtml += `<p>${spot.comment.replace(/\n/g, '<br>')}</p>`;
+                    }
+                    if (spot.address) {
+                        spotDetailsHtml += `<p><strong>住所:</strong> ${spot.address}</p>`;
+                    }
+                    if (spot.phone) {
+                        spotDetailsHtml += `<p><strong>電話:</strong> ${spot.phone}</p>`;
+                    }
+                    if (spot.hours) {
+                        spotDetailsHtml += `<p><strong>営業時間:</strong> ${spot.hours}</p>`;
+                    }
                     spotDetailsHtml += '</div>';
 
                     let goodsHtml = '';
-                    if (spot.goods_name) {
-                        goodsHtml = `<div class="info-window-goods"><img src="${spot.goods_image || ''}" alt="${spot.goods_name}" class="info-window-goods-image"><div class="info-window-goods-details"><strong>${spot.goods_name}</strong><span>${spot.goods_price}</span></div></div><button class="info-window-btn purchase" onclick="window.vueApp.showPurchaseModal('${spot.id}')">購入する</button>`;
-                    }
                     let lodgingButtonHtml = '';
-                    if (spot.lodging_plans && spot.lodging_plans.length > 0) {
-                        lodgingButtonHtml = `<button class="info-window-btn lodging" onclick="window.vueApp.showLodgingModal('${spot.id}')">宿泊プランを見る</button>`;
+                    if (spot.goodsUrl) {
+                        goodsHtml = `<button class="info-window-btn purchase" data-spot-id="${spot.id}">グッズを購入</button>`;
                     }
+                    if (spot.lodgingUrl) {
+                        lodgingButtonHtml = `<button class="info-window-btn lodging" data-spot-id="${spot.id}">宿泊予約</button>`;
+                    }
+            
                     let questButtonHtml = '';
                     if (spot.questId) {
-                        questButtonHtml = `<button class="info-window-btn start-quest-btn" data-quest-id="${spot.questId}">クエストを受注する</button>`; //
+                        let questStatus = '';
+                        if (this.currentUser && this.currentUser.questProgress) {
+                            questStatus = this.currentUser.questProgress[spot.questId];
+                        }
+                        
+                        // スマホ操作を待つのみ（デモモードでもクリックによる擬似クリア機能は削除）
+                        if (questStatus === 'in_progress') {
+                             questButtonHtml = `<button class="info-window-btn info-btn" disabled>クエスト進行中...</button>`;
+                        } else if (questStatus === 'completed') {
+                             questButtonHtml = `<button class="info-window-btn info-btn-green" disabled>クエストクリア！</button>`;
+                        } else {
+                             questButtonHtml = `<button class="info-window-btn start-quest-btn" data-quest-id="${spot.questId}">クエストを受注する</button>`;
+                        }
                     }
-                    
-                    // ▼▼▼ 以下を新規追加 ▼▼▼
+            
                     let eventButtonHtml = '';
-                    // spotに event1_name (イベントの1つ目) が設定されていればボタンを表示
                     if (spot.event1_name) {
-                        eventButtonHtml = `<button class="info-window-btn event-btn" data-spot-name="${spot.name}">イベント詳細を見る</button>`; //
+                        eventButtonHtml = `<button class="info-window-btn event-btn" data-spot-name="${spot.name}">イベント詳細を見る</button>`;
                     }
-                    // ▲▲▲ ここまで新規追加 ▲▲▲
-                    
-                    const infoWindow = new google.maps.InfoWindow({ //
-                        content: `
-                            <div class="info-window">
-                                <h6 class="info-window-header">${spot.name}</h6>
-                                <div class="info-window-content">
-                                    ${spotImageHtml}
-                                    ${spotDetailsHtml}
-                                    ${goodsHtml}
-                                    ${lodgingButtonHtml}
-                                    ${questButtonHtml} 
-                                    ${eventButtonHtml} </div>
+
+                    if (spot.goodsUrl) {
+                        goodsHtml = `<button class="info-window-btn purchase" data-spot-id="${spot.id}">グッズを購入</button>`;
+                    }
+                    if (spot.lodgingUrl) {
+                        lodgingButtonHtml = `<button class="info-window-btn lodging" data-spot-id="${spot.id}">宿泊予約</button>`;
+                    }
+
+                    const popupContent = `
+                        <div class="info-window">
+                            <h6 class="info-window-header">${spot.name}</h6>
+                            <div class="info-window-content">
+                                ${spotImageHtml}
+                                ${spotDetailsHtml}
+                                ${goodsHtml}
+                                ${lodgingButtonHtml}
+                                ${questButtonHtml}
+                                ${eventButtonHtml} 
                             </div>
-                        `,
-                        disableAutoPan: true
+                        </div>
+                    `;
+
+                    const popup = L.popup({
+                        maxWidth: 450, 
+                        autoPan: true, 
+                        closeButton: true,
+                        autoClose: false
+                    }).setContent(popupContent);
+                    
+                    marker.bindPopup(popup);
+
+                    marker.on('click', (e) => {
+                        if (this.activePopup && this.activePopup !== e.target.getPopup()) {
+                             this.activePopup.close();
+                        }
+                        this.activePopup = e.target.getPopup();
+
+                        this.hideEventDetail();
+                        this.hideQuestDetail();
                     });
 
-                    marker.addListener('click', (e) => {
-                        this.onSpotClick(spot.name);
-                    });
-
-                    this.markers.push({ gmapMarker: marker, infoWindow: infoWindow, spotData: spot });
+                    marker.addTo(this.map);
+                    this.markers.push(marker);
                 });
             },
+
             onSpotClick(spotName) {
-                if (this.isAnimating) {
-                    cancelAnimationFrame(this.animationFrameId);
+                console.log(`スポットがクリックされました: ${spotName}`);
+                
+                const marker = this.markers.find(m => m.options.title === spotName);
+                const spot = this.spots.find(s => s.name === spotName);
+
+                if (!spot) return;
+                
+                if (!spot.latitude || !spot.longitude) {
+                    if(marker) {
+                        marker.openPopup();
+                        this.activePopup = marker.getPopup();
+                    }
+                    return; 
                 }
-                const target = this.markers.find(m => m.spotData.name === spotName);
-                if (target) {
-                    this.openInfoWindow(target.infoWindow, target.gmapMarker);
-                    const destination = target.gmapMarker.getPosition();
-                    this.flyTo(destination, 16);
+
+                const lat = parseFloat(spot.latitude);
+                const lng = parseFloat(spot.longitude);
+
+                if (isNaN(lat) || isNaN(lng)) return;
+                
+                const latLng = [lat, lng];
+                
+                this.flyTo(latLng, 18); 
+                
+                if (marker) {
+                    setTimeout(() => {
+                        if (this.activePopup && this.activePopup !== marker.getPopup()) {
+                             this.activePopup.close();
+                        }
+                        marker.openPopup();
+                        this.activePopup = marker.getPopup();
+                    }, 500); 
                 }
             },
+
             openInfoWindow(infoWindow, marker) {
-                if (this.activeInfoWindow) {
-                    this.activeInfoWindow.close();
-                }
-                infoWindow.open(this.map, marker);
-                this.activeInfoWindow = infoWindow;
+                // Leafletでは未使用
             },
+
             easing(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); },
             
             flyTo(destination, endZoom) {
-                this.isAnimating = true;
-                const duration = 4000;
-                let startTime = null;
-
-                const projection = this.map.getProjection();
-                if (!projection) {
-                    this.map.moveCamera({ center: destination, zoom: endZoom });
-                    this.isAnimating = false;
-                    return;
-                }
-                const destPoint = projection.fromLatLngToPoint(destination);
-                const scale = Math.pow(2, endZoom);
+                if (!this.map || !destination) return;
+                const zoom = endZoom || 17;
                 
-                const offsetX = 150;
-                const offsetY = 250;
+                this.map.flyTo(destination, zoom, {
+                    animate: true,
+                    duration: 2.0 
+                });
+            },
 
-                const offsetPoint = new google.maps.Point(offsetX / scale, offsetY / scale);
-                const newCenterPoint = new google.maps.Point(destPoint.x - offsetPoint.x, destPoint.y - offsetPoint.y);
-                const newCenterLatLng = projection.fromPointToLatLng(newCenterPoint);
+            focusOnQuestSpot(questId) {
+                if (!questId) return;
 
-                const p0 = {
-                    lat: this.map.getCenter().lat(),
-                    lng: this.map.getCenter().lng(),
-                    zoom: this.map.getZoom()
-                };
-                const p2 = {
-                    lat: newCenterLatLng.lat(),
-                    lng: newCenterLatLng.lng(),
-                    zoom: endZoom
-                };
-
-                const distance = Math.sqrt(Math.pow(p2.lat - p0.lat, 2) + Math.pow(p2.lng - p0.lng, 2));
-                const arcHeight = Math.max(0.5, Math.min(distance * 0, 0.1));
-
-                const p1 = {
-                    lat: (p0.lat + p2.lat) / 2,
-                    lng: (p0.lng + p2.lng) / 2,
-                    zoom: Math.min(p0.zoom, p2.zoom) - arcHeight
-                };
-
-                const frame = (currentTime) => {
-                    if (!startTime) startTime = currentTime;
-                    const progress = Math.min((currentTime - startTime) / duration, 1);
-                    const t = this.easing(progress);
-
-                    const currentLat = Math.pow(1 - t, 2) * p0.lat + 2 * (1 - t) * t * p1.lat + Math.pow(t, 2) * p2.lat;
-                    const currentLng = Math.pow(1 - t, 2) * p0.lng + 2 * (1 - t) * t * p1.lng + Math.pow(t, 2) * p2.lng;
-                    const currentZoom = Math.pow(1 - t, 2) * p0.zoom + 2 * (1 - t) * t * p1.zoom + Math.pow(t, 2) * p2.zoom;
-
-                    this.map.moveCamera({
-                        center: { lat: currentLat, lng: currentLng },
-                        zoom: currentZoom
-                    });
-
-                    if (progress < 1) {
-                        this.animationFrameId = requestAnimationFrame(frame);
-                    } else {
-                        this.isAnimating = false;
-                        this.animationFrameId = null;
-                    }
-                };
-                this.animationFrameId = requestAnimationFrame(frame);
+                const targetSpot = this.spots.find(s => s.questId === questId);
+                if (!targetSpot) return;
+                
+                this.onSpotClick(targetSpot.name);
             },
             
             fadeVolume(refName, element, targetVolume, duration = 500) {
@@ -388,7 +541,7 @@ function initMap() {
                     }
                 }, interval);
             },
-            showEventDetail(spotData) { //
+            showEventDetail(spotData) { 
                 const events = [];
                 for (let i = 1; i <= 3; i++) {
                     if (spotData[`event${i}_name`]) {
@@ -420,14 +573,13 @@ function initMap() {
             hideQrCode() {
                 this.isQrModalVisible = false;
             },
-            async showQuestDetail(questId) { //
+            async showQuestDetail(questId) { 
                 try {
-                    const questRef = db.collection('quests').doc(questId);
-                    const questDoc = await questRef.get();
+                    const questData = this.allQuests.find(q => q.id === questId);
 
-                    if (questDoc.exists) {
-                        const questData = questDoc.data();
+                    if (questData) {
                         this.currentQuestForDetail = {
+                            id: questData.id,
                             title: questData.title,
                             image: questData.image,
                             description: questData.description,
@@ -437,16 +589,58 @@ function initMap() {
                         this.isQuestDetailVisible = true;
                     } else {
                         console.error("指定されたクエストが見つかりません:", questId);
-                        alert("クエスト情報の読み込みに失敗しました。");
                     }
                 } catch (error) {
                     console.error("クエスト情報の取得エラー:", error);
-                    alert("エラーが発生しました。");
                 }
             },
             hideQuestDetail() {
                 this.isQuestDetailVisible = false;
             },
+            
+            // --- 展示会用：リセット機能（クラウド対応） ---
+            async resetExhibition() {
+                if (!confirm("展示用リセットを行いますか？\n（次の体験者のためにクラウド上のデータを初期化します）")) {
+                    return;
+                }
+
+                const defaultUser = {
+                    userId: DEMO_USER_ID,
+                    points: 5000, // デモ用の初期ポイント
+                    questProgress: {}
+                };
+                
+                this.isTokenLoading = true; 
+
+                try {
+                    // 1. Firebase (DEMO_USER) をリセット
+                    if (db) {
+                         await db.collection('users').doc(DEMO_USER_ID).set(defaultUser);
+                         console.log("クラウド上のDEMOデータをリセットしました。");
+                    }
+                    
+                    this.currentUser = defaultUser;
+
+                    // UIリセット
+                    this.placeMarkers();
+                    this.hideQuestDetail();
+                    this.hideEventDetail();
+                    this.hideRewardPage();
+                    if (this.activePopup) {
+                        this.activePopup.close();
+                        this.activePopup = null;
+                    }
+
+                    alert("リセット完了。初期状態に戻りました。");
+
+                } catch (e) {
+                    console.error("リセット失敗:", e);
+                    alert("リセット中にエラーが発生しました。");
+                } finally {
+                    this.isTokenLoading = false;
+                }
+            },
+
             showPurchaseModal(spotId) {
                 this.modalTargetSpot = this.spots.find(s => s.id === spotId);
                 if (this.modalTargetSpot) { this.isPurchaseModalVisible = true; }
@@ -469,6 +663,10 @@ function initMap() {
             },
             openLink(url) {
                 if (url) {
+                    if (navigator.onLine === false) {
+                        alert("オフラインのため、外部リンクを開けません。");
+                        return;
+                    }
                     window.open(url, '_blank');
                 } else {
                     alert('リンク先が設定されていません。');
@@ -487,10 +685,18 @@ function initMap() {
                     this.authErrorMessage = "6桁の数字を入力してください。";
                     return;
                 }
+                
+                if (!db) {
+                     this.authErrorMessage = "本番データベースに接続できません。電波状況を確認するか、デモモードをお試しください。";
+                     return;
+                }
+                
                 this.isTokenLoading = true;
+                this.isDemoMode = false; 
                 this.authErrorMessage = '';
+                
                 try {
-                    this.detachUserListener();
+                    this.detachUserListener(); 
                     const token = this.enteredAuthToken;
                     const tokenRef = db.collection('authTokens').doc(token);
                     const tokenDoc = await tokenRef.get();
@@ -510,9 +716,14 @@ function initMap() {
                     }
                     const userId = tokenData.userId;
                     
+                    // 本番モードなので、Firebaseからデータを取得する
+                    if (this.spots.length === 0) {
+                        await this.fetchData('production');
+                    }
+                    
                     const userRef = db.collection('users').doc(userId);
                     this.userListener = userRef.onSnapshot((doc) => {
-                        console.log("ユーザーデータが更新されました！");
+                        console.log("本番ユーザーデータが更新されました！");
                         if (doc.exists) {
                             this.currentUser = doc.data();
                         } else {
@@ -533,29 +744,91 @@ function initMap() {
                     this.isTokenLoading = false;
                 }
             },
+
+            async startDemoMode() {
+                this.isTokenLoading = true;
+                this.isDemoMode = true; 
+                this.authErrorMessage = '';
+                
+                try {
+                    this.detachUserListener(); 
+                    
+                    // デモモードなので、ローカルJSONからデータを取得する
+                    await this.fetchData('demo'); 
+                    
+                    if (!db) throw "デモモード（クラウド連携）にはDB接続が必要です。";
+
+                    const userRef = db.collection('users').doc(DEMO_USER_ID);
+                    
+                    // 初回データがなければ作る
+                    const docSnap = await userRef.get();
+                    if (!docSnap.exists) {
+                        await userRef.set({
+                            userId: DEMO_USER_ID,
+                            points: 5000,
+                            questProgress: {}
+                        });
+                    }
+
+                    // 監視開始 (スマホ操作の反映)
+                    this.userListener = userRef.onSnapshot((doc) => {
+                       console.log("デモ用クラウドデータが更新されました！(スマホ操作反映)");
+                       if (doc.exists) {
+                           this.currentUser = doc.data();
+                       }
+                       this.placeMarkers();
+                    }, (error) => {
+                       console.warn("デモモード: クラウド監視失敗。", error);
+                    });
+                    
+                    console.log("デモモード(クラウド連携あり)を開始しました。");
+                    this.hideAuthModal();
+
+                } catch (error) {
+                    console.error("デモモード開始エラー:", error);
+                    this.authErrorMessage = "デモモードの開始に失敗しました。";
+                } finally {
+                    this.isTokenLoading = false;
+                }
+            },
+            
+            logout() {
+                if (!confirm("連携を解除し、モード選択画面に戻りますか？")) {
+                    return;
+                }
+                
+                this.detachUserListener(); 
+                
+                this.currentUser = null;
+                this.isDemoMode = false;
+                
+                this.spots = [];
+                this.allQuests = [];
+                this.rewards = [];
+                
+                this.placeMarkers(); 
+                
+                if (db) {
+                    this.fetchData('production');
+                } else {
+                    this.showAuthModal();
+                }
+            },
+
             detachUserListener() {
                 if (this.userListener) {
-                    this.userListener();
+                    this.userListener(); 
                     this.userListener = null;
-                    this.currentUser = null;
-                    this.placeMarkers();
                     console.log("データベースの監視を停止しました。");
                 }
             },
-            // ▼▼▼ このメソッドを新規追加 ▼▼▼
-            isFirebaseMp4(url) { //
+
+            isVideoFile(url) { 
                 if (!url) return false;
-                try {
-                    // URLをパースして '?' より前のパス部分を取得
-                    const path = new URL(url).pathname;
-                    return path.toLowerCase().endsWith('.mp4');
-                } catch (e) {
-                    // 不正なURLの場合は、単純な文字列としてチェック
-                    return url.split('?')[0].toLowerCase().endsWith('.mp4');
-                }
+                const lowerUrl = url.toLowerCase();
+                return lowerUrl.includes('.mp4');
             },
-            // ▲▲▲ ここまで新規追加 ▲▲▲
-            // ▼▼▼ ここから下のメソッドを全て新規・修正 ▼▼▼
+            
             showRewardPage() {
                 this.isRewardPageVisible = true;
             },
@@ -578,31 +851,30 @@ function initMap() {
                 }
 
                 this.isRedeeming = true;
-                const userRef = db.collection('users').doc(this.currentUser.userId);
-
+                
                 try {
-                    await db.runTransaction(async (transaction) => {
+                    if (!db) throw "データベースに接続されていません。";
+                     
+                     const userId = this.currentUser.userId;
+                     const userRef = db.collection('users').doc(userId);
+                     
+                     await db.runTransaction(async (transaction) => {
                         const userDoc = await transaction.get(userRef);
-                        if (!userDoc.exists) {
-                            throw "ユーザーが見つかりません。";
-                        }
-
+                        if (!userDoc.exists) throw "ユーザーが見つかりません。";
+                        
                         const currentPoints = userDoc.data().points || 0;
-                        if (currentPoints < reward.requiredPoints) {
-                            throw "マポが不足しています。";
-                        }
+                        if (currentPoints < reward.requiredPoints) throw "マポが不足しています。";
                         
                         const newPoints = currentPoints - reward.requiredPoints;
                         transaction.update(userRef, { points: newPoints });
-                    });
-                    
-                    // ここで物理的な景品を出すための処理を呼び出す（将来的な拡張）
-                    console.log(`${reward.name} の交換処理が完了しました。`);
+                     });
+                     
+                    console.log("クラウドでポイント交換完了");
                     alert(`🎉 ${reward.name}と交換しました！ 🎉`);
 
                 } catch (error) {
                     console.error("景品交換エラー:", error);
-                    alert("景品の交換中にエラーが発生しました。ポイントを確認して再度お試しください。");
+                    alert("景品の交換中にエラーが発生しました: " + error);
                 } finally {
                     this.isRedeeming = false;
                 }

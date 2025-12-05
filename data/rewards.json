@@ -1,0 +1,122 @@
+[
+    {
+        "id": "kanbajji",
+        "image": "images/kanbajji.png",
+        "requiredPoints": 100,
+        "name": "缶バッジ"
+    },
+    {
+        "id": "ki-horuda-",
+        "requiredPoints": 100,
+        "image": "images/ki-horuda-.png",
+        "name": "キーホルダー０１"
+    },
+    {
+        "id": "ki-horuda-02",
+        "image": "images/ki-horuda-02.jpg",
+        "name": "キーホルダー０２",
+        "requiredPoints": 100
+    },
+    {
+        "id": "sutekka-",
+        "image": "images/sutekka-.png",
+        "name": "ステッカー",
+        "requiredPoints": 100
+    },
+    {
+        "id": "akusuta",
+        "requiredPoints": 200,
+        "image": "images/akusuta.jpg",
+        "name": "アクリルスタンド"
+    },
+    {
+        "id": "kousui01",
+        "image": "images/kousui01.png",
+        "name": "赤城ユイナ- オードパルファム",
+        "requiredPoints": 300
+    },
+    {
+        "id": "kousui02",
+        "image": "images/kousui02.png",
+        "requiredPoints": 300,
+        "name": "上泉マイ- オードパルファム"
+    },
+    {
+        "id": "kousui03",
+        "name": "三俣チョコ - オードパルファム",
+        "requiredPoints": 300,
+        "image": "images/kousui03.png"
+    },
+    {
+        "id": "kousui04",
+        "requiredPoints": 300,
+        "name": "北原キョウカ - オードパルファム",
+        "image": "images/kousui04.png"
+    },
+    {
+        "id": "kousui05",
+        "requiredPoints": 300,
+        "image": "images/kousui05.png",
+        "name": "新里アズ - オードパルファム"
+    },
+    {
+        "id": "figyua01",
+        "requiredPoints": 400,
+        "image": "images/figyua01.png",
+        "name": "赤城ユイナ - フィギュア"
+    },
+    {
+        "id": "figyua02",
+        "image": "images/figyua02.png",
+        "requiredPoints": 400,
+        "name": "三俣チョコ - フィギュア"
+    },
+    {
+        "id": "figyua03",
+        "image": "images/figyua03.png",
+        "requiredPoints": 400,
+        "name": "新里アズ - フィギュア"
+    },
+    {
+        "id": "figyua04",
+        "image": "images/figyua04.png",
+        "requiredPoints": 400,
+        "name": "北原キョウカ - フィギュア"
+    },
+    {
+        "id": "figyua05",
+        "name": "上泉マイ - フィギュア",
+        "image": "images/figyua05.png",
+        "requiredPoints": 400
+    },
+    {
+        "id": "buru-rei01",
+        "image": "images/buru-rei01.jpg",
+        "name": "ブルーレイ2巻",
+        "requiredPoints": 500
+    },
+    {
+        "id": "buru-rei02",
+        "image": "images/buru-rei02.jpg",
+        "requiredPoints": 500,
+        "name": "ブルーレイ1巻"
+    },
+    {
+        "id": "buru-rei03",
+        "requiredPoints": 500,
+        "name": "ブルーレイ3巻",
+        "image": "images/buru-rei03.jpg"
+    },
+    {
+        "id": "buru-rei04",
+        "requiredPoints": 500,
+        "name": "ブルーレイ5巻",
+        "image": "images/buru-rei04.jpg"
+    },
+    {
+        "id": "buru-rei05",
+        "image": "images/buru-rei05.jpg",
+        "name": "ブルーレイ４巻",
+        "requiredPoints": 500
+    }
+]

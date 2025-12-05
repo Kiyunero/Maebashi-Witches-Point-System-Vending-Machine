@@ -237,28 +237,32 @@ body {
     background: rgba(255, 255, 255, 0.6);
 }
 
+/* ▼▼▼ ここから修正 ▼▼▼ */
 /* 情報ウィンドウの全体的な設定 */
 .info-window {
     width: 450px;
     max-height: 50vh;
     overflow-y: auto;
     overflow-x: hidden;
+    /* フキダシの丸みに合わせる */
+    border-radius: 12px;
+    box-sizing: border-box; /* はみ出し防止 */
 }
 
 /* 情報ウィンドウのヘッダー（スポット名）の固定設定 */
 .info-window-header {
     position: -webkit-sticky;
     position: sticky;
-    top: 0%;
-    background-color: rgba(255, 255, 255, 0.3);
+    top: 0;
+    background-color: rgba(255, 255, 255, 0.95); /* ほぼ不透明に */
+    backdrop-filter: blur(5px);
     color: #111;
-    padding: 12px 0;
-    margin: 0 -15px 0 -15px;
-    padding-left: 15px;
-    padding-right: 15px;
+    padding: 12px 15px; /* 上下左右のパディング */
+    margin: 0; /* ネガティブマージンを削除 */
     z-index: 10;
     text-align: center;
     font-weight: bold;
+    border-bottom: 1px solid #eee; /* 区切り線 */
 }
 
 /* 詳細ウィンドウのタイトルのフォントサイズ */
@@ -268,8 +272,11 @@ body {
 
 /* 情報ウィンドウのスクロール可能コンテンツ */
 .info-window-content {
-    padding: 0 15px 15px 15px;
+    padding: 15px; /* ヘッダーとパディングを合わせる */
+    /* margin-topの-15pxを削除 */
 }
+/* ▲▲▲ ここまで修正 ▲▲▲ */
+
 
 .info-window-spot-image {
     width: 100%;
@@ -316,6 +323,7 @@ body {
     cursor: pointer;
     margin-bottom: 10px;
     transition: opacity 0.2s;
+    box-sizing: border-box; /* はみ出し防止 */
 }
 .info-window-btn:hover {
     opacity: 0.9;
@@ -331,6 +339,14 @@ body {
     background-color: #0dcaf0;
 }
 
+/* ▼▼▼ ここから追加 ▼▼▼ */
+.info-window-btn.info-btn {
+    background-color: #6c757d;
+}
+.info-window-btn.info-btn-green {
+    background-color: #198754;
+}
+/* ▲▲▲ ここまで追加 ▲▲▲ */
 
 .info-window hr {
     margin: 12px 0;
@@ -522,26 +538,6 @@ body {
     font-weight: bold;
     color: #333;
     margin-top: 1rem;
-}
-
-/* Google Mapのデフォルトスタイル調整 */
-.gm-style-iw-d {
-   overflow: hidden !important;
-   background-color: transparent !important;
-}
-
-.gm-style-iw-c {
-    padding: 0 !important;
-    background: rgba(255, 255, 255, 0.5) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-.gm-ui-hover-effect {
-    background-color: transparent !important;
 }
 
 /* 広告画面に戻るボタン */
@@ -755,3 +751,15 @@ body {
     transform: translateY(-5px) scale(1.03);
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
+
+/* ▼▼▼ ここから追加 (ポップアップはみ出し対策) ▼▼▼ */
+.leaflet-popup-content-wrapper {
+    padding: 0; /* Leafletのデフォルトパディングを削除 */
+    border-radius: 12px; /* .info-window の丸みに合わせる */
+}
+.leaflet-popup-content {
+    margin: 0; /* Leafletのデフォルトマージンを削除 */
+    /* ↓.info-windowの幅と一致させる */
+    width: 450px !important; 
+}
+/* ▲▲▲ ここまで追加 ▲▲▲ */
